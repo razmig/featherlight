@@ -19,19 +19,17 @@
 		jQueryConstructor = $.event && $.event.special.swipeleft && $,
 		hammerConstructor = ('Hammer' in window) && function($el){ new window.Hammer(el[0]); },
 		swipeAwareConstructor = isTouchAware && (jQueryConstructor || hammerConstructor),
-		afterCloseCallback = function(_super) {
-			return function(event){
+		callbackChain = {
+			afterClose: function(_super, event) {
 					var fl = this;
 					fl.$instance.off('next.'+fl.config.namespace+' previous.'+fl.config.namespace);
 					if (swipeAwareConstructor) {
 						fl.$instance.off('swipeleft');
 						fl.$instance.off('swiperight');
 					}
-					return _super.call(fl, event);
-			};
-		},
-		afterOpenCallback = function(_super) {
-			return function(event){
+					return _super(event);
+			},
+			afterOpen: function(_super, event){
 					var self = this,
 						$img = self.$instance.find('img');
 
@@ -64,17 +62,16 @@
 							.after(createNav('next'));
 					}
 
-					_super.call(self, event);
+					_super(event);
 
 					self.afterImage(event);
-			};
+			}
 		};
 
 	function FeatherlightGallery($source, config) {
 		if(this instanceof FeatherlightGallery) {  /* called with new */
 			$.featherlight.apply(this, arguments);
-			this.afterOpen = afterOpenCallback(this.afterOpen);
-			this.afterClose = afterCloseCallback(this.afterClose);
+			this.chainCallbacks(callbackChain);
 		} else {
 			var flg = new FeatherlightGallery($.extend({$source: $source, $currentTarget: $source.first()}, config));
 			flg.open();
